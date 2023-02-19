@@ -11,15 +11,6 @@
 
 - name: install java 
   shell: sudo amazon-linux-extras install java-openjdk11 -y
-# - name: Add Jenkins repository
-#   yum_repository:
-#     name: jenkins
-#     description: Add Jenkins repository
-#     baseurl: https://pkg.jenkins.io/redhat-stable/
-#     gpgcheck: yes
-#     gpgkey: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-#     enabled: yes
-#     state: present
 
 - name: Install Jenkins
   yum:
