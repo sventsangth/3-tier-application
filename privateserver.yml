@@ -28,7 +28,7 @@
          - proto: tcp
            from_port: 8080 #jenkins
            to_port: 8080
-           cidr_ip: 10.0.1.0/24
+           cidr_ip: 10.0.1.0/24 #internal ip to use jenkins
          - proto: tcp
            from_port: 22 #ssh
            to_port: 22
