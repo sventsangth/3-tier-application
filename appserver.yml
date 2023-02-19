@@ -10,6 +10,7 @@
     key_name: my-key-pair
     subnet_id: subnet-0123456789abcdef0 #run vpc.yml first, copy the id
     sg_name: my-sg-name
+    count: 1
     sg_description: "Security group for app servers"
     sg_rules:
       - proto: tcp
