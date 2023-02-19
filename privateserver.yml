@@ -1,64 +1,55 @@
 ---
-- name: Create private servers in private subnet
-  hosts: localhost
-  connection: local
-  gather_facts: false
+- hosts: localhost
   vars:
-    region: us-west-2
+    region: "us-west-2"
+    tag_name: testing
+    key_name: testing
     instance_type: t2.micro
-    ami_id: ami-0c55b159cbfafe1f0
-    count: 2
-    vpc_id: vpc-1234567890abcdef0 #check the vpc id
-    private_subnet_id: subnet-1234567890abcdef0 # check subnet id
-    security_group_name: private-sg
-    security_group_description: Security group for private servers
+    ami_id: ami-0f1a5f5ada0e7da53  # Amazon Linux 2 Kernel 5.10 AMI 2.0.20230207.0 x86_64 HVM gp2
+    instance_profile_name: EC2-webserver
+    count: 1
+    creator: ansible
+    group: privateserver # use for group_vars> "xxx.yml"
+    ansible_port: 22
+    # ec2_volume_size: 16
+    # count_tag: testing
+    vpc_subnet_id: subnet-0dc6651df1e456d57
+  roles:
+  - ec2
+  
+  pre_tasks: 
+  - name: example ec2 group
+    ec2_group:
+       name: testing group
+       description: an EC2 group
+       vpc_id: vpc-035244768fb238cb1
+       region: "{{ region }}"
+       rules:
+         - proto: tcp
+           from_port: 8080 #jenkins
+           to_port: 8080
+           cidr_ip: 10.0.1.0/24
+         - proto: tcp
+           from_port: 22 #ssh
+           to_port: 22
+           cidr_ip: 0.0.0.0/0
+    register: create_ec2_sg
     
-  tasks:
-    - name: Create security group for private servers
-      amazon.aws.ec2_vpc_security_group:
-        name: "{{ security_group_name }}"
-        description: "{{ security_group_description }}"
-        vpc_id: "{{ vpc_id }}"
-        rules:
-          - proto: tcp
-            from_port: 22
-            to_port: 22
-            cidr_ip: 0.0.0.0/0 # limited ip range
-          - proto: tcp
-            from_port: 8080 # port for jenkins
-            to_port: 8080
-            cidr_ip: 10.0.1.0/24
-      register: sg_output
+  - name: "set fact: ec2 sg ID"
+    set_fact:
+      ec2_sg_id: "{{ create_ec2_sg.group_id }}"
 
-    - name: Create private servers in private subnet
-      amazon.aws.ec2:
-        instance_type: "{{ instance_type }}"
-        image_id: "{{ ami_id }}"
-        count: "{{ count }}"
-        key_name: mykeypair
-        vpc_subnet_id: "{{ private_subnet_id }}"
-        assign_public_ip: no
-        network_interfaces:
-          - device_index: 0
-            subnet_id: "{{ private_subnet_id }}"
-            security_group_ids:
-              - "{{ sg_output.group_id }}"
-        tags:
-          Name: Private server
-      register: ec2_output
+- hosts: privateserver
+  become: true
+  become_method: sudo
+  # connection: ssh
+  remote_user: ec2-user
+  tasks: 
+  - name: "say hi from amazon servers"
+    debug:
+      msg: "hi"
+  
+  roles:
+  - jenkins
 
-    - name: Add private servers to hosts group
-      add_host:
-        name: "{{ item.public_ip }}"
-        groups: private_servers
-      with_items: "{{ ec2_output.instances }}"
 
-    - name: Install Git on private servers
-      hosts: private_servers
-      roles:
-        - role: git
-
-    - name: Install Jenkins on private servers
-      hosts: private_servers
-      roles:
-        - role: jenkins

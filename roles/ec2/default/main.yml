@@ -1,0 +1,33 @@
+---
+  - name: Gather Facts to check if a similar instance is running
+    ec2_instance_info:
+      region: "{{ region }}"
+      filters:
+        instance-state-name: running
+        "tag:Name": "testing"
+    register: ec2_exists    
+  
+  - name: Display Details
+    debug: var=ec2_exists
+  
+  
+  - name: Provison "{{ count }}" ec2 instances in "{{ region }}"
+    ec2:
+      key_name: "{{ key_name }}"
+      instance_type: "{{ instance_type }}"
+      image: "{{ ami_id }}"
+      vpc_subnet_id: "{{ vpc_subnet_id }}"
+      group_id: "{{ ec2_sg_id }}"
+      region: "{{ region }}"
+      instance_profile_name: "{{ instance_profile_name }}"
+      exact_count: "{{ count }}"
+      count_tag:
+        Creator: "{{ creator }}"
+        Name: "{{ tag_name }}"
+      instance_tags:
+        Creator: ansible
+        Name: "{{ tag_name }}"
+    # delegate_to: 127.0.0.1
+    register: ec2
+    when: ec2_exists.instances | selectattr('state','equalto','running') | list | count == 0
+  
