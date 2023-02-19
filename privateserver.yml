@@ -51,5 +51,6 @@
   
   roles:
   - jenkins
+  - git
 
 
